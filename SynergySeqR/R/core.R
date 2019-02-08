@@ -1,0 +1,149 @@
+#' Drugs_SigsR
+#'
+#' Reads input data files and calculates similarity score of each drug to reference, ratio of genes discordant to disease signature.
+#' Returns a data frame of similarity scores.
+#'
+#' @param datasetInput_Dataset Specify a dataset of drug signatures. (Default: LINCS L1000 Dec 2015)
+#' @param refDrug Character vector specifying a reference drug signature to use from datasetInput_Dataset. (Default: JQ1)
+#' @param n_bins Numeric value to filter out the lowest 'n' percentile of the gene consensus scores from the Reference Drug Signature. (Default value: 33)
+#' @param datasetInput_Dis Specify a disease signature dataset. (Default: Glioblastoma TCGA) 
+#' @param ... Optional arguments passed to read.table().
+#'
+#' @return a data frame 
+#'
+#' @family Drugs_SigsR functions
+#'
+#' @export
+
+
+Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, datasetInput_Dis=NULL, ...){
+  if (is.null(datasetInput_Dataset)==TRUE){
+    inputFile <- "data/OUT3_noDMSO_noUntreated_Regina_removed.txt"
+    message('No input dataset specified. Defaulting to "LINCS L1000 Dec 2015". ')
+  } else {
+    
+    if (datasetInput_Dataset=="LINCS L1000 Dec 2015"){
+      inputFile <- "data/OUT3_noDMSO_noUntreated_Regina_removed.txt"
+    } else {
+      
+      if (datasetInput_Dataset=="LINCS L1000 March 2017"){
+        inputFile <- "data/matPH3_2_1_0.2_0.3_L1000_Batch2017_Regina_removed.txt"
+      } else {
+        inputFile <- datasetInput_Dataset
+        #next
+      }
+    }
+  }
+  Drugs_Sigs <- read.table(file=inputFile, sep ="\t", header=TRUE)
+  Drugs_Sigs <- na.omit(Drugs_Sigs)
+  row.names(Drugs_Sigs) <-  as.character(Drugs_Sigs$Genes)
+  Drugs_Sigs <- Drugs_Sigs[,-1]
+  # return(Drugs_Sigs)
+  
+  if (is.null(refDrug)==TRUE){
+    JQ1_Sig <- t(Drugs_Sigs[1,])
+    message(paste0('No reference drug signature specified. Defaulting to ', colnames(JQ1_Sig)))
+  } else {
+    
+    JQ1_Sig <- t(Drugs_Sigs[paste0(refDrug),])
+    
+  }
+  
+  value2 <- as.numeric(100 - as.numeric(n_bins))
+  message(paste("Using a ", value2,"% threshold for the gene consensus score. Genes with the lowest ",n_bins,"% scores will be filtered out",sep = ""))
+  
+  
+  if (is.null(datasetInput_Dis)==TRUE){
+    input_disease <- "Glioblastoma TCGA (GBM)"
+    message('No input dataset specified. Defaulting to "Glioblastoma TCGA (GBM)". ')
+  } else {
+    
+    input_disease <- datasetInput_Dis
+  }
+  
+  input_disease <- switch(input_disease,
+                          "Glioblastoma TCGA (GBM)" = "data/TCGA_GBM_Signature.txt",
+                          "Colon TCGA (CRC)" = "data/TCGA_CRC_Signature.txt",
+                          "Breast TCGA (BRCA)" = "data/TCGA_BRCA_Signature.txt",
+                          "PDX GBM Group 1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
+                          "PDX GBM Group 2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
+                          "PDX GBM Group 3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
+                          "PDX GBM Group 4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
+  
+  TCGA_Sig <- read.table(file=input_disease, header = TRUE, sep = "\t")
+  
+  
+  JQ1_Sig_v <- JQ1_Sig
+  JQ1_Sig_v <- data.frame(JQ1_Sig_v, Genes=row.names(JQ1_Sig_v))
+  colnames(JQ1_Sig_v) <- c("JQ1","Genes")
+  TCGA_Sig_v <- TCGA_Sig
+  V <- unique(as.numeric(as.character(JQ1_Sig_v$JQ1))) 
+  V2 <- max(abs(V))
+  V4 <- as.numeric(n_bins)/100
+  V5 <- V2*V4 
+  V6 <- round(V5)
+  JQ1_Sig_v$JQ1 <- as.numeric(as.character(JQ1_Sig_v$JQ1))
+  JQ1_Sig_v2 <- JQ1_Sig_v[which(JQ1_Sig_v$JQ1 > V6 | JQ1_Sig_v$JQ1 < -V6),]
+  JQ1_Sig_v2 <- JQ1_Sig_v2[which(JQ1_Sig_v2$JQ1 > 0 | JQ1_Sig_v2$JQ1 < 0),]
+  jq1_genes <- as.character(JQ1_Sig_v2$Genes)
+  Drugs_Sigs2 <- Drugs_Sigs[,jq1_genes]
+  tt <-  apply(Drugs_Sigs2,1,function(x){x*JQ1_Sig_v2$JQ1})
+  
+  #this is to calculate how similar are the drug signatures to jq1 (ratio of # of genes that have same direction with the JQ1 signature devided with # of genes that are disocrdant to JQ1)
+  tt2 <-  apply(tt,2,function(x) { a <- sum(x>0)
+  b <- sum(x<0)
+  b[b==0] <- 1 # replace b with 1 so we can devide by that number. Another way would be to add one to both a and b
+  c <- a/b
+  c
+  return(c(a,b,c))
+  })
+  tt3 <- as.data.frame(t(tt2))
+  # tt3 <- as.data.frame(tt2)
+  # tmax <- max(tt3)
+  # tt4 <- tt3/tmax
+  ### ### ### ### ### ### ### ### ### ### ### ###
+  #this is to calculate the ratio of the genes that are discordant to the Disease Signature (and are not affected by JQ1) devided by the # of genes that are concordant to the Disease Signature (and non-JQ1)
+  
+  jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$JQ1==0),2])
+  
+  genes <- colnames(Drugs_Sigs)
+  TCGA_Sig_v$log2FoldChange <- as.numeric(TCGA_Sig_v$log2FoldChange)
+  TCGA_Sig_v2 <- TCGA_Sig_v[,-1,drop=FALSE]
+  TCGA_Sig_v3 <- aggregate(TCGA_Sig_v2, by = list(TCGA_Sig_v$Genes),FUN=mean) # this is in case we have duplicate gene symbols in the signature
+  non_jq1_genes <- intersect(as.character(TCGA_Sig_v3$Group.1),jq1_genes2)
+  Drugs_Sigs3 <- Drugs_Sigs[,non_jq1_genes]
+  row.names(TCGA_Sig_v3) <- as.character(TCGA_Sig_v3$Group.1)
+  TCGA_Sig_v4 <- TCGA_Sig_v3[non_jq1_genes,]
+  
+  pp <-  apply(Drugs_Sigs3,1,function(x){x*TCGA_Sig_v4$log2FoldChange})
+  pp2 <-  apply(pp,2,function(x) { 
+    aa <- sum(x>0)
+    bb <- sum(x<0)
+    aa[aa==0] <- 1 # replace bb with 1 so we can devide by that number. Another way would be to add one to both aa and bb
+    cc <- bb/aa
+    
+    dd<- c(aa,bb,cc)
+  })
+  pp3 <- as.data.frame(t(pp2))
+  # pmax <- max(pp3[,3])
+  # pp4 <- pp3/pmax
+  # Final <- merge(pp4,tt4,by="row.names")
+  Final <- merge(pp3,tt3,by="row.names")
+  
+  colnames(Final) <- c("Drug","Disease_Same","Disease_Opp","Disease_Discordance","Reference_Drug_Orthogonality")
+  Final
+  #values$Final2 <- data.frame(Final)
+  Final[,2] <- round(Final[,2],digits=3)
+  Final[,3] <- round(Final[,3],digits=3)
+  
+  SM_MOA <- read.csv(file="data/L1000_SM_MOA.csv", header=TRUE)
+  
+  Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
+  plotly.plot <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance,type = 'scatter',alpha=0.7,marker = list(size = 14),
+                         mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+  
+  return(plotly.plot)
+  
+}
+
+
