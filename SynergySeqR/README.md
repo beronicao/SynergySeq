@@ -24,7 +24,10 @@ library(devtools)
 update_packages("SynergySeqR")
 ```
 
-## Example Usage 
-(Coming soon)
+## Demo
+```R
+res <- Drugs_SigsR()
 
+res[[2]]$preRenderHook(p=res[[2]])  # view plot
 
+```
