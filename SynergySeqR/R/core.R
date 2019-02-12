@@ -72,7 +72,6 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   
   TCGA_Sig <- read.table(file=input_disease, header = TRUE, sep = "\t")
   
-  
   JQ1_Sig_v <- JQ1_Sig
   JQ1_Sig_v <- data.frame(JQ1_Sig_v, Genes=row.names(JQ1_Sig_v))
   colnames(JQ1_Sig_v) <- c("JQ1","Genes")
@@ -87,20 +86,20 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   JQ1_Sig_v2 <- JQ1_Sig_v2[which(JQ1_Sig_v2$JQ1 > 0 | JQ1_Sig_v2$JQ1 < 0),]
   jq1_genes <- as.character(JQ1_Sig_v2$Genes)
   Drugs_Sigs2 <- Drugs_Sigs[,jq1_genes]
-  tt <-  apply(Drugs_Sigs2,1,function(x){x*JQ1_Sig_v2$JQ1})
+  tt <-  apply(Drugs_Sigs2, 1, function(x){x*JQ1_Sig_v2$JQ1})
+  
   
   # calculate similarity of drug signatures to selected reference drug (ratio of genes that are concordant with the reference drug signature to number of genes that are discordant to reference drug signature)
-  tt2 <-  apply(tt,2,function(x) { a <- sum(x>0)
+  tt2 <-  apply(tt, 2, function(x) { 
+  a <- sum(x>0)
   b <- sum(x<0)
-  b[b==0] <- 1 # replace b with 1 so we can devide by that number. Another way would be to add one to both a and b
+  b[b==0] <- 1 # replace b with 1 so we can divide by that number. Another way would be to add one to both a and b
   c <- a/b
-  c
+  #c
   return(c(a,b,c))
   })
   tt3 <- as.data.frame(t(tt2))
-  # tt3 <- as.data.frame(tt2)
-  # tmax <- max(tt3)
-  # tt4 <- tt3/tmax
+ 
   ### ### ### ### ### ### ### ### ### ### ### ###
   # calculate ratio of genes that are discordant to the Disease Signature (and are not affected by the selected reference drug) to genes that are concordant with the Disease Signature (and non-reference drug signatures)
   
@@ -119,31 +118,33 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   pp2 <-  apply(pp,2,function(x) { 
     aa <- sum(x>0)
     bb <- sum(x<0)
-    aa[aa==0] <- 1 # replace bb with 1 so we can devide by that number. Another way would be to add one to both aa and bb
+    aa[aa==0] <- 1 # replace aa with 1 so we can divide by that number. Another way would be to add one to both aa and bb
     cc <- bb/aa
-    
     dd<- c(aa,bb,cc)
   })
-  pp3 <- as.data.frame(t(pp2))
-  # pmax <- max(pp3[,3])
-  # pp4 <- pp3/pmax
-  # Final <- merge(pp4,tt4,by="row.names")
-  Final <- merge(pp3,tt3,by="row.names")
   
-  colnames(Final) <- c("Drug","Disease_Same","Disease_Opp","Disease_Discordance","Reference_Drug_Orthogonality")
+  pp3 <- as.data.frame(t(pp2))
+  Final <- merge(pp3[,3,drop=F],tt3[,3,drop=F],by="row.names")
+  
+  colnames(Final) <- c("Drug","Disease_Discordance", "Reference_Drug_Orthogonality")
+  
   Final
-  #values$Final2 <- data.frame(Final)
   Final[,2] <- round(Final[,2],digits=3)
   Final[,3] <- round(Final[,3],digits=3)
   
   SM_MOA <- read.csv(file="data/L1000_SM_MOA.csv", header=TRUE)
   
-  Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
-  plotly.plot <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance,type = 'scatter',alpha=0.7,marker = list(size = 14),
-                         mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+  Final2 <- merge(Final, SM_MOA, by.x = "Drug", by.y = "Drugs", all.x = TRUE)
+  # res.table <- return(Final2)
   
-  return(plotly.plot)
+  plotly.plot <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, type = 'scatter', alpha=0.7, marker = list(size = 14),
+                         mode = 'markers', hoverinfo = 'text', text = ~paste(Drug,'<br>', "Ratio:", Disease_Discordance, Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
   
+  # plotly.plot <- return(plotly.plot)
+  
+  res2 <- return(list(assign("res.table", Final2), assign("res.plotly", plotly.plot)))
 }
+
+
 
 
