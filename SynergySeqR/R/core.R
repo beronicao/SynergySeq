@@ -62,13 +62,33 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   }
   
   input_disease <- switch(input_disease,
-                          "Glioblastoma TCGA (GBM)" = "data/TCGA_GBM_Signature.txt",
-                          "Colon TCGA (CRC)" = "data/TCGA_CRC_Signature.txt",
-                          "Breast TCGA (BRCA)" = "data/TCGA_BRCA_Signature.txt",
-                          "PDX GBM Group 1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
-                          "PDX GBM Group 2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
-                          "PDX GBM Group 3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
-                          "PDX GBM Group 4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
+                          "BLCA" = "data/TCGA_BLCA_DE.txt", 
+                          "BRCA" = "data/TCGA_BRCA_DE.txt", 
+                          "CESC" = "data/TCGA_CESC_DE.txt", 
+                          "CHOL" = "data/TCGA_CHOL_DE.txt", 
+                          "COAD" = "data/TCGA_COAD_DE.txt", 
+                          "ESCA" = "data/TCGA_ESCA_DE.txt", 
+                          "GBM" = "data/TCGA_GBM_DE.txt", 
+                          "HNSC" = "data/TCGA_HNSC_DE.txt", 
+                          "KICH" = "data/TCGA_KICH_DE.txt", 
+                          "KIRC" = "data/TCGA_KIRC_DE.txt", 
+                          "KIRP" = "data/TCGA_KIRP_DE.txt", 
+                          "LIHC" = "data/TCGA_LIHC_DE.txt", 
+                          "LUAD" = "data/TCGA_LUAD_DE.txt", 
+                          "LUSC" = "data/TCGA_LUSC_DE.txt", 
+                          "PCPG" = "data/TCGA_PCPG_DE.txt", 
+                          "PRAD" = "data/TCGA_PRAD_DE.txt", 
+                          "READ" = "data/TCGA_READ_DE.txt", 
+                          "STAD" = "data/TCGA_STAD_DE.txt", 
+                          "THCA" = "data/TCGA_THCA_DE.txt", 
+                          "UCEC" = "data/TCGA_UCEC_DE.txt",
+                          "GBM.sig" = "data/TCGA_GBM_Signature.txt",
+                          "CRC.sig" = "data/TCGA_CRC_Signature.txt",
+                          "BRCA.sig" = "data/TCGA_BRCA_Signature.txt",
+                          "PDX.GBM1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
+                          "PDX.GBM2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
+                          "PDX.GBM3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
+                          "PDX.GBM4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
   
   TCGA_Sig <- read.table(file=input_disease, header = TRUE, sep = "\t")
   
