@@ -3,10 +3,10 @@
 #' Reads input data files and calculates similarity score of each drug to reference, ratio of genes discordant to disease signature.
 #' Returns a data frame of similarity scores.
 #'
-#' @param datasetInput_Dataset Specify a dataset of drug signatures. (Default: LINCS L1000 Dec 2015)
+#' @param datasetInput_Dataset Specify a dataset of drug signatures. (Default: LINCS L1000 Dec 2015) For custom drug signature table, input name of a tab-delimited file with drug/molecule names in the first column and gene symbols in the first row.   
 #' @param refDrug Character vector specifying a reference drug signature to use from datasetInput_Dataset. (Default: JQ1)
 #' @param n_bins Numeric value to filter out the lowest 'n' percentile of the gene consensus scores from the Reference Drug Signature. (Default value: 33)
-#' @param datasetInput_Dis Specify a disease signature dataset. (Default: Glioblastoma TCGA) 
+#' @param datasetInput_Dis Specify a gene expression signature dataset for a disease of interest. (Default: Glioblastoma TCGA) 
 #' @param ... Optional arguments passed to read.table().
 #'
 #' @return a data frame 
@@ -36,7 +36,7 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   }
   Drugs_Sigs <- read.table(file=inputFile, sep ="\t", header=TRUE)
   Drugs_Sigs <- na.omit(Drugs_Sigs)
-  row.names(Drugs_Sigs) <-  as.character(Drugs_Sigs$Genes)
+  row.names(Drugs_Sigs) <-  as.character(Drugs_Sigs[,1])
   Drugs_Sigs <- Drugs_Sigs[,-1]
   # return(Drugs_Sigs)
   
@@ -54,8 +54,8 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   
   
   if (is.null(datasetInput_Dis)==TRUE){
-    input_disease <- "Glioblastoma TCGA (GBM)"
-    message('No input dataset specified. Defaulting to "Glioblastoma TCGA (GBM)". ')
+    input_disease <- "GBM.sig"
+    message('No input disease specified. Defaulting to Glioblastoma TCGA (GBM.sig). ')
   } else {
     
     input_disease <- datasetInput_Dis
@@ -90,7 +90,7 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
                           "PDX.GBM3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
                           "PDX.GBM4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
   
-  TCGA_Sig <- read.table(file=input_disease, header = TRUE, sep = "\t")
+  TCGA_Sig <- read.csv(file=input_disease, sep="")
   
   JQ1_Sig_v <- JQ1_Sig
   JQ1_Sig_v <- data.frame(JQ1_Sig_v, Genes=row.names(JQ1_Sig_v))
@@ -126,7 +126,7 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$JQ1==0),2])
   
   genes <- colnames(Drugs_Sigs)
-  TCGA_Sig_v$log2FoldChange <- as.numeric(TCGA_Sig_v$log2FoldChange)
+  TCGA_Sig_v$Genes.log2FoldChangelog2FoldChange <- as.numeric(TCGA_Sig_v$log2FoldChange)
   TCGA_Sig_v2 <- TCGA_Sig_v[,-1,drop=FALSE]
   TCGA_Sig_v3 <- aggregate(TCGA_Sig_v2, by = list(TCGA_Sig_v$Genes),FUN=mean) # this is in case we have duplicate gene symbols in the signature
   non_jq1_genes <- intersect(as.character(TCGA_Sig_v3$Group.1),jq1_genes2)
@@ -160,11 +160,20 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   plotly.plot <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, type = 'scatter', alpha=0.7, marker = list(size = 14),
                          mode = 'markers', hoverinfo = 'text', text = ~paste(Drug,'<br>', "Ratio:", Disease_Discordance, Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
   
-  # plotly.plot <- return(plotly.plot)
+  res2 <- list(assign("res.table", Final2), assign("res.plotly", plotly.plot))
   
-  res2 <- return(list(assign("res.table", Final2), assign("res.plotly", plotly.plot)))
-}
+  return(res2)
+  setClass(Class = "")
+  }
 
 
+#' Drugs_SigsR.class
+#'
+#' Creates a Drugs_SigsR-class object from a list containing a drug synergy table and a plotly plot.
+#' Returns a Drugs_SigsR-class object. 
+#'
+#' @keywords internal
+#'
+#' @export
 
 

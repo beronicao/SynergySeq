@@ -189,33 +189,33 @@ datasetInput_Dis <- reactive({
                                if(is.null(input$disease2))
                                   {
                                    switch(input$disease,
-                                        "BLCA" = "data/TCGA_BLCA_DE.txt", 
-                                        "BRCA" = "data/TCGA_BRCA_DE.txt", 
-                                        "CESC" = "data/TCGA_CESC_DE.txt", 
-                                        "CHOL" = "data/TCGA_CHOL_DE.txt", 
-                                        "COAD" = "data/TCGA_COAD_DE.txt", 
-                                        "ESCA" = "data/TCGA_ESCA_DE.txt", 
-                                        "GBM" = "data/TCGA_GBM_DE.txt", 
-                                        "HNSC" = "data/TCGA_HNSC_DE.txt", 
-                                        "KICH" = "data/TCGA_KICH_DE.txt", 
-                                        "KIRC" = "data/TCGA_KIRC_DE.txt", 
-                                        "KIRP" = "data/TCGA_KIRP_DE.txt", 
-                                        "LIHC" = "data/TCGA_LIHC_DE.txt", 
-                                        "LUAD" = "data/TCGA_LUAD_DE.txt", 
-                                        "LUSC" = "data/TCGA_LUSC_DE.txt", 
-                                        "PCPG" = "data/TCGA_PCPG_DE.txt", 
-                                        "PRAD" = "data/TCGA_PRAD_DE.txt", 
-                                        "READ" = "data/TCGA_READ_DE.txt", 
-                                        "STAD" = "data/TCGA_STAD_DE.txt", 
-                                        "THCA" = "data/TCGA_THCA_DE.txt", 
-                                        "UCEC" = "data/TCGA_UCEC_DE.txt",
-                                        "GBM.sig" = "data/TCGA_GBM_Signature.txt",
-                                        "CRC.sig" = "data/TCGA_CRC_Signature.txt",
-                                        "BRCA.sig" = "data/TCGA_BRCA_Signature.txt",
-                                        "PDX.GBM1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
-                                        "PDX.GBM2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
-                                        "PDX.GBM3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
-                                        "PDX.GBM4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
+                                          "TCGA Bladder Urothelial Carcinoma (BLCA)" = "data/TCGA_BLCA_DE.txt", 
+                                          "TCGA Breast Invasive Carcinoma (BRCA)" = "data/TCGA_BRCA_DE.txt", 
+                                          "TCGA Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (CESC)" = "data/TCGA_CESC_DE.txt", 
+                                          "TCGA Cholangiocarcinoma (CHOL)" = "data/TCGA_CHOL_DE.txt", 
+                                          "TCGA Colon Adenocarcinoma (COAD)" = "data/TCGA_COAD_DE.txt", 
+                                          "TCGA Esophageal Carcinoma (ESCA)" = "data/TCGA_ESCA_DE.txt", 
+                                          "TCGA Glioblastoma Multiforme (GBM)" = "data/TCGA_GBM_DE.txt", 
+                                          "TCGA Head and Neck Squamous Cell Carcinoma (HNSC)" = "data/TCGA_HNSC_DE.txt", 
+                                          "TCGA Kidney Chromophobe (KICH)" = "data/TCGA_KICH_DE.txt", 
+                                          "TCGA Kidney Renal Clear Cell Carcinoma (KIRC)" = "data/TCGA_KIRC_DE.txt", 
+                                          "TCGA Kidney Renal Papillary Cell Carcinoma (KIRP)" = "data/TCGA_KIRP_DE.txt", 
+                                          "TCGA Liver Hepatocellular Carcinoma (LIHC)" = "data/TCGA_LIHC_DE.txt", 
+                                          "TCGA Lung Adenocarcinoma (LUAD)" = "data/TCGA_LUAD_DE.txt", 
+                                          "TCGA Lung Squamous Cell Carcinoma (LUSC)" = "data/TCGA_LUSC_DE.txt", 
+                                          "TCGA Pheochromocytoma and Paraganglioma (PCPG)" = "data/TCGA_PCPG_DE.txt", 
+                                          "TCGA Prostate Adenocarcinoma (PRAD)" = "data/TCGA_PRAD_DE.txt", 
+                                          "TCGA Rectum Adenocarcinoma (READ)" = "data/TCGA_READ_DE.txt", 
+                                          "TCGA Stomach Adenocarcinoma (STAD)" = "data/TCGA_STAD_DE.txt", 
+                                          "TCGA Thyroid Carcinoma (THCA)" = "data/TCGA_THCA_DE.txt", 
+                                          "TCGA Uterine Corpus Endometrial Carcinoma (UCEC)" = "data/TCGA_UCEC_DE.txt", 
+                                          "TCGA Glioblastoma signature (GBM.sig)" = "data/TCGA_GBM_Signature.txt", 
+                                          "TCGA Colon signature (CRC.sig)" = "data/TCGA_CRC_Signature.txt", 
+                                          "TCGA Breast signature (BRCA.sig)" = "data/TCGA_BRCA_Signature.txt", 
+                                          "PDX GBM Group 1 (PDX.GBM1)" = "data/Table_G1_1_PDX_Group1_L1000_only.txt", 
+                                          "PDX GBM Group 2 (PDX.GBM2)" = "data/Table_G2_1_PDX_Group2_L1000_only.txt", 
+                                          "PDX GBM Group 3 (PDX.GBM3)" = "data/Table_G3_1_PDX_Group3_L1000_only.txt", 
+                                          "PDX GBM Group 4 (PDX.GBM4)" = "data/Table_G4_1_PDX_Group4_L1000_only.txt")
     }
     else
     {
@@ -228,7 +228,7 @@ datasetInput_Dis <- reactive({
     
                       })
   
-  TCGA_Sig <- reactive({ read.table(file=datasetInput_Dis(),header = TRUE,sep = "\t")})
+  TCGA_Sig <- reactive({ read.csv(file=datasetInput_Dis(),sep = "")})
 
   
   output$plot1 <- renderPlotly({
