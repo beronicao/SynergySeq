@@ -1,6 +1,5 @@
 #App7
 
-
 library(ggplot2)
 library(shiny)
 library(plotly)
@@ -241,7 +240,6 @@ datasetInput_Dis <- reactive({
     V <- unique(as.numeric(as.character(JQ1_Sig_v$JQ1)))
     V2 <- max(abs(V))
     V4 <- as.numeric(input$bins)/100
-    #V4 <- as.numeric(30/100)
     V5 <- V2*V4
     V6 <- round(V5)
     JQ1_Sig_v$JQ1 <- as.numeric(as.character(JQ1_Sig_v$JQ1))
@@ -252,15 +250,19 @@ datasetInput_Dis <- reactive({
     tt <-  apply(Drugs_Sigs2,1,function(x){x*JQ1_Sig_v2$JQ1})
 
     #this is to calculate how similar are the drug signatures to jq1 (ratio of # of genes that have same direction with the JQ1 signature devided with # of genes that are disocrdant to JQ1)
-    tt2 <-  apply(tt,2,function(x) { a <- sum(x>0)
+    tt2 <-  apply(tt,2,function(x) { 
+    a <- sum(x>0)
     b <- sum(x<0)
     b[b==0] <- 1 # replace b with 1 so we can devide by that number. Another way would be to add one to both a and b
     c <- a/b
-    c
+    # c
+    return(c(a,b,c))
     })
-    tt3 <- as.data.frame(tt2)
-    tmax <- max(tt3)
-    tt4 <- tt3/tmax
+    
+    tt3 <- as.data.frame(t(tt2))
+    # tt3 <- as.data.frame(tt2)
+    # tmax <- max(tt3)
+    # tt4 <- tt3/tmax
     ### ### ### ### ### ### ### ### ### ### ### ###
     #this is to calculate the ratio of the genes that are discordant to the Disease Signature (and are not affected by JQ1) devided by the # of genes that are concordant to the Disease Signature (and non-JQ1)
    
@@ -280,33 +282,27 @@ datasetInput_Dis <- reactive({
     pp2 <-  apply(pp,2,function(x) { 
                                     aa <- sum(x>0)
                                     bb <- sum(x<0)
-                                    aa[aa==0] <- 1 # replace bb with 1 so we can devide by that number. Another way would be to add one to both aa and bb
+                                    aa[aa==0] <- 1 # replace aa with 1 so we can divide by that number. Another way would be to add one to both aa and bb
                                     cc <- bb/aa
                                     
                                     dd<- c(aa,bb,cc)
                                    })
     pp3 <- as.data.frame(t(pp2))
-    pmax <- max(pp3[,3])
-    pp4 <- pp3/pmax
-    Final <- merge(pp4,tt4,by="row.names")
-    #text2 <- paste(input$signature,"_Orthogonality",sep="")
-    colnames(Final) <- c("Drug","Disease_Same","Disease_Opp","Disease_Discordance","Reference_Drug_Orthogonality")
+    # pmax <- max(pp3[,3])
+    # pp4 <- pp3/pmax
+    # Final <- merge(pp4,tt4,by="row.names")
+    # colnames(Final) <- c("Drug","Disease_Same","Disease_Opp","Disease_Discordance","Reference_Drug_Orthogonality")
+    
+    Final <- merge(pp3[,3,drop=F],tt3[,3,drop=F],by="row.names")
+    colnames(Final) <- c("Drug","Disease_Discordance", "Reference_Drug_Orthogonality")
     Final
-    #values$Final2 <- data.frame(Final)
-   Final[,2] <- round(Final[,2],digits=3)
-   Final[,3] <- round(Final[,3],digits=3)
+  
+    Final[,2] <- round(Final[,2],digits=3)
+    Final[,3] <- round(Final[,3],digits=3)
    
-   values$Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
+    values$Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
     plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance,type = 'scatter',alpha=0.7,marker = list(size = 14),
             mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
-    
-    #library(ggplot2)
-    #plotly_IMAGE(p, format = "pdf", out_file = "output.pdf")
-    #ggplot(Final, aes(x=JQ1_Orthogonality, y=Disease_Discordance)) + 
-      #geom_point(size=4,alpha =0.7,color="#0771E4",shape=16)+
-     # labs(
-     #      x="JQ1_Orthogonality", y = "Disease_Discordance")+
-     # theme_minimal()  
     
     
     })
