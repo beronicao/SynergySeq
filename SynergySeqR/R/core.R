@@ -16,7 +16,7 @@
 #' @export
 
 
-Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, datasetInput_Dis=NULL, ...){
+Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, datasetInput_Dis=NULL, options_Bioactiv=NULL, molecTarget=NULL, ...){
   if (is.null(datasetInput_Dataset)==TRUE){
     inputFile <- "data/OUT3_noDMSO_noUntreated_Regina_removed.txt"
     message('No input dataset specified. Defaulting to "LINCS L1000 Dec 2015". ')
@@ -90,6 +90,23 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
                           "PDX.GBM3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
                           "PDX.GBM4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
   
+  if (is.null(options_Bioactiv)==TRUE){
+    input_bioactivities <- "IC50"
+    message('No drug activity measurement specified. Defaulting to IC50. ')
+  } else {
+    
+    input_bioactivities <- options_Bioactiv
+  }
+  
+  input_bioactivFile <- switch(input_bioactivities,
+                                "IC50" = "data/Bioactivities_IC50.txt",
+                                "Kd" = "data/Bioactivities_Kd.txt",
+                                "Ki" = "data/Bioactivities_Ki.txt",
+                                "Potency" = "data/Bioactivities_Potency.txt"
+  )
+  
+  Bioactivities <- read.table(file=input_bioactivFile, sep ="\t", header=TRUE)
+  
   TCGA_Sig <- read.csv(file=input_disease, sep="")
   
   JQ1_Sig_v <- JQ1_Sig
@@ -152,19 +169,42 @@ Drugs_SigsR <- function(datasetInput_Dataset=NULL, refDrug=NULL, n_bins=33, data
   Final[,2] <- round(Final[,2],digits=3)
   Final[,3] <- round(Final[,3],digits=3)
   
+  bioact.moa <- merge(Bioactivities, SM_MOA, by = "Drugs")
+  f3 <- merge(Final, bioact.moa, by.x = "Drug", by.y = "Drugs", all.x = TRUE)
+  
+  f3.ord <-f3[with(f3, order(-Disease_Discordance, Reference_Drug_Orthogonality)), ]
+  
+  if (is.null(molecTarget)==TRUE){
+    target <- as.character(f3.ord$target_gene_symbol[1])
+    message(paste0('No molecular target of interest specified. Defaulting to ', target, '. '))
+  } else {
+    target <- molecTarget
+  }
+  
+  drugs.sameTargets1 <- na.omit(as.data.frame(f3.ord[f3.ord$target_gene_symbol==target,]))
+  
+  colnames(drugs.sameTargets1)[1] <- "Drug"
+  
+  # library(RColorBrewer)
+  
+  pal <- brewer.pal(nrow(drugs.sameTargets1),"BrBG")
+  
   SM_MOA <- read.csv(file="data/L1000_SM_MOA.csv", header=TRUE)
   
   Final2 <- merge(Final, SM_MOA, by.x = "Drug", by.y = "Drugs", all.x = TRUE)
-  # res.table <- return(Final2)
   
-  plotly.plot <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, type = 'scatter', alpha=0.7, marker = list(size = 14),
-                         mode = 'markers', hoverinfo = 'text', text = ~paste(Drug,'<br>', "Ratio:", Disease_Discordance, Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+  p1 <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, type = 'scatter', alpha=0.7, marker = list(size = 14),
+                mode = 'markers', hoverinfo = 'text', text = ~paste(Drug,'<br>', "Ratio:", Disease_Discordance, Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+  
+  plotly.plot <- p1 %>%
+    add_data(drugs.sameTargets1) %>%
+    
+    add_markers(x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, color = ~Median, colors = pal) %>% colorbar(title = paste0("Median ", input_bioactivities))
   
   res2 <- list(assign("res.table", Final2), assign("res.plotly", plotly.plot))
   
   return(res2)
-  setClass(Class = "")
-  }
+}
 
 
 #' Drugs_SigsR.class
