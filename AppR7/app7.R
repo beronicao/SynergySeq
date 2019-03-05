@@ -7,10 +7,10 @@ library(DT)
 library(visNetwork)
 library(reshape2)
 library(shinythemes)
+library(RColorBrewer)
 
 SM_MOA <- read.csv(file="data/L1000_SM_MOA.csv", header=TRUE)
 
-      
 ui <- fluidPage(theme = shinytheme("flatly"),
                 navbarPage(
                   title = div(
@@ -97,7 +97,19 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                              helpText("OR"),
                                              fileInput("disease2", "Upload a Disease Signature",
                                                            multiple = FALSE,
-                                                           accept = c(".txt"))
+                                                           accept = c(".txt")),
+                                             hr(),
+                                             
+                                             h3("Step 4:"),
+                                             selectInput(inputId = "bioactivities",
+                                                         label = "Choose a measure of biological activity:",
+                                                         choices = c("IC50", "Kd", "Ki", "Potency"), selected = "IC50"), 
+                                             hr(),
+                                             
+                                             h3("Step 5:"),
+                                             uiOutput("ui_step5"),
+                                             helpText("Choose a molecular drug target of interest to compare drug activity."),
+                                             hr()
                                                ),
                                      mainPanel(
                                        p("More details coming soon."),
@@ -166,11 +178,7 @@ Drugs_SigsR <- reactive({
   
 Drugs <- reactive({ row.names(Drugs_SigsR())})
   
-  
-  
-output$ui <- renderUI({ selectInput("signature", "Choose a Reference Drug",choices = Drugs(),selected = "GBM_JQ1")})
-
-
+output$ui <- renderUI({ selectInput("signature", "Choose a Reference Drug", choices = Drugs(), selected = "ABT-737")})
 
 values <- reactiveValues()
 
@@ -181,8 +189,6 @@ output$selected_var <- renderText({
                                    paste("You have selected to use a ", value2,"% threshold for the gene consensus score. Genes with the lowest ",input$bins,"% scores will be filtered out",sep = "")
                                    })
 
-  
-  
   
 datasetInput_Dis <- reactive({
                                if(is.null(input$disease2))
@@ -221,14 +227,41 @@ datasetInput_Dis <- reactive({
       input$disease2$datapath
     }
   })
+
+datasetInput_Bioactivities <- reactive({
+  if (is.null(input$bioactivities))
+  {return()}
+  
+  switch(input$bioactivities,
+         "IC50" = "data/Bioactivities_IC50.txt",
+         "Kd" = "data/Bioactivities_Kd.txt",
+         "Ki" = "data/Bioactivities_Ki.txt",
+         "Potency" = "data/Bioactivities_Potency.txt"
+  )
+})
+
+Drugs_TargsR <- reactive({
+  Drugs_Targs <- read.table(file=datasetInput_Bioactivities(), sep ="\t", header=TRUE)
+  Drugs_Targs.moa <- merge(Drugs_Targs, SM_MOA, by = "Drugs")
+  #DrugTargets <- as.character(bioact.moa$target_gene_symbol)
+  Drugs_Targs.moa
+})
+
+Targets <- reactive({ as.character(Drugs_TargsR()[,'target_gene_symbol'])})
+
+output$ui_step5 <- renderUI({ selectInput("target", "Select a molecular target", choices = Targets() )})
+
+
  # JQ1_Sig <- reactive({read.table(file=datasetInput_Sig(),sep ="\t", header=TRUE)})
   JQ1_Sig <- reactive({
                       T <-t(Drugs_SigsR()[as.character(input$signature),])
-    
                       })
   
   TCGA_Sig <- reactive({ read.csv(file=datasetInput_Dis(),sep = "")})
 
+  targetChoice <- reactive({
+    as.character(input$target)
+  })
   
   output$plot1 <- renderPlotly({
     JQ1_Sig_v <- JQ1_Sig()
@@ -300,9 +333,31 @@ datasetInput_Dis <- reactive({
     Final[,2] <- round(Final[,2],digits=3)
     Final[,3] <- round(Final[,3],digits=3)
    
+    bioact.moa <- Drugs_TargsR()
+    f3 <- merge(Final, bioact.moa, by.x = "Drug", by.y = "Drugs", all.x = TRUE)
+    
+    f3.ord <-f3[with(f3, order(-Disease_Discordance, Reference_Drug_Orthogonality)), ]
+    
+    target <- targetChoice()
+    drugs.sameTargets1 <- na.omit(as.data.frame(f3.ord[f3.ord$target_gene_symbol==paste0(target),]))
+    colnames(drugs.sameTargets1)[1] <- c("Drug")
+    
+    if (nrow(drugs.sameTargets1)>2){
+      pal <- brewer.pal(nrow(drugs.sameTargets1),"BrBG")
+    } else{
+      pal <- brewer.pal(3,"BrBG")
+    }
+    
     values$Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
-    plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance,type = 'scatter',alpha=0.7,marker = list(size = 14),
-            mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+    # plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance,type = 'scatter',alpha=0.7,marker = list(size = 14),
+    #         mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+    
+    p1 <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, type = 'scatter', alpha=0.7, marker = list(size = 14),
+                  mode = 'markers', hoverinfo = 'text', text = ~paste(Drug,'<br>', "Ratio:", Disease_Discordance, Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+    
+    p1 %>%
+      add_data(drugs.sameTargets1) %>%
+      add_markers(x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, color = ~Median, colors = pal) %>% colorbar(title = paste0("Median ", input$bioactivities))
     
     
     })
@@ -400,7 +455,7 @@ datasetInput_Dis <- reactive({
    
   
   output$ui_N <- renderUI({ 
-                            selectInput(inputId="signature_N",label="",choices = Drugs_Ν(),selected = "JQ1")
+                            selectInput(inputId="signature_N",label="",choices = Drugs_Ν(), selected = "ABT-737")
                          })
   
   
