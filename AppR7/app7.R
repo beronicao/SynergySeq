@@ -176,7 +176,7 @@ Drugs_SigsR <- reactive({
 
 
   
-Drugs <- reactive({ row.names(Drugs_SigsR())})
+Drugs <- reactive({ sort(row.names(Drugs_SigsR()))})
   
 output$ui <- renderUI({ selectInput("signature", "Choose a Reference Drug", choices = Drugs(), selected = "ABT-737")})
 
@@ -247,9 +247,9 @@ Drugs_TargsR <- reactive({
   Drugs_Targs.moa
 })
 
-Targets <- reactive({ as.character(Drugs_TargsR()[,'target_gene_symbol'])})
+Targets <- reactive({ sort(as.character(Drugs_TargsR()[,'target_gene_symbol']))})
 
-output$ui_step5 <- renderUI({ selectInput("target", "Select a molecular target", choices = Targets() )})
+output$ui_step5 <- renderUI({ selectInput("target", "Select a molecular target", choices = Targets())})
 
 
  # JQ1_Sig <- reactive({read.table(file=datasetInput_Sig(),sep ="\t", header=TRUE)})
