@@ -12,9 +12,9 @@ library(DT)
 library(visNetwork)
 library(reshape2)
 library(shinythemes)
+library(RColorBrewer)
+
 SM_MOA <- read.csv(file="data/L1000_SM_MOA.csv", header=TRUE)
-
-
 
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
 ### 2. UI ####
@@ -43,9 +43,36 @@ ui <- navbarPage(  theme = shinytheme("flatly"),responsive = TRUE,
                                                           p("1. Disease Signature", style = "text-align: center;margin:0px;color: #34495e;font-weight: bold;font-size: 20px;"),
                                                           hr(style="border-top-style: solid;border-top-width:2px;margin:12px;"),
                                                           selectInput(inputId = "T2_Disease",
-                                                          label = "Select a Disease Signature:",
-                                                          choices = c("","Glioblastoma TCGA (GBM)","Colon TCGA (CRC)", "Breast TCGA (BRCA)",
-                                                                      "PDX GBM Group 1", "PDX GBM Group 2", "PDX GBM Group 3", "PDX GBM Group 4")),
+                                                            label = "Select a Disease Signature:",
+                                                            choices = c("",
+                                                                      "TCGA Bladder Urothelial Carcinoma (BLCA)", 
+                                                                      "TCGA Breast Invasive Carcinoma (BRCA)", 
+                                                                      "TCGA Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (CESC)", 
+                                                                      "TCGA Cholangiocarcinoma (CHOL)", 
+                                                                      "TCGA Colon Adenocarcinoma (COAD)", 
+                                                                      "TCGA Esophageal Carcinoma (ESCA)", 
+                                                                      "TCGA Glioblastoma Multiforme (GBM)", 
+                                                                      "TCGA Head and Neck Squamous Cell Carcinoma (HNSC)", 
+                                                                      "TCGA Kidney Chromophobe (KICH)", 
+                                                                      "TCGA Kidney Renal Clear Cell Carcinoma (KIRC)", 
+                                                                      "TCGA Kidney Renal Papillary Cell Carcinoma (KIRP)", 
+                                                                      "TCGA Liver Hepatocellular Carcinoma (LIHC)", 
+                                                                      "TCGA Lung Adenocarcinoma (LUAD)", 
+                                                                      "TCGA Lung Squamous Cell Carcinoma (LUSC)", 
+                                                                      "TCGA Pheochromocytoma and Paraganglioma (PCPG)", 
+                                                                      "TCGA Prostate Adenocarcinoma (PRAD)", 
+                                                                      "TCGA Rectum Adenocarcinoma (READ)", 
+                                                                      "TCGA Stomach Adenocarcinoma (STAD)", 
+                                                                      "TCGA Thyroid Carcinoma (THCA)", 
+                                                                      "TCGA Uterine Corpus Endometrial Carcinoma (UCEC)", 
+                                                                      "TCGA Glioblastoma signature (GBM.sig)", 
+                                                                      "TCGA Colon signature (CRC.sig)", 
+                                                                      "TCGA Breast signature (BRCA.sig)", 
+                                                                      "PDX GBM Group 1 (PDX.GBM1)", 
+                                                                      "PDX GBM Group 2 (PDX.GBM2)", 
+                                                                      "PDX GBM Group 3 (PDX.GBM3)", 
+                                                                      "PDX GBM Group 4 (PDX.GBM4)")
+                                                          ),
                                                           helpText("OR",style="text-align: center;margin-top:0px;margin-bottom: 6px;"),
                                                           fluidRow(
                                                             column(8,  h5("Paste a Disease Signature",style="font-weight: bold") )), 
@@ -115,14 +142,35 @@ T2_values <- reactiveValues()
                   
 observeEvent(eventExpr=input$T2_Disease,ignoreInit = TRUE, {
               datasetInput_Dis <- switch(input$T2_Disease,
-                                         "Glioblastoma TCGA (GBM)" = "data/TCGA_GBM_Signature.txt",
-                                         "Colon TCGA (CRC)" = "data/TCGA_CRC_Signature.txt",
-                                         "Breast TCGA (BRCA)" = "data/TCGA_BRCA_Signature.txt",
-                                         "PDX GBM Group 1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
-                                         "PDX GBM Group 2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
-                                         "PDX GBM Group 3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
-                                         "PDX GBM Group 4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt")
-              T2_Temp1 <- read.table(file=datasetInput_Dis,header = TRUE,sep = "\t")
+                                         "TCGA Bladder Urothelial Carcinoma (BLCA)" = "data/TCGA_BLCA_DE.txt", 
+                                         "TCGA Breast Invasive Carcinoma (BRCA)" = "data/TCGA_BRCA_DE.txt", 
+                                         "TCGA Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (CESC)" = "data/TCGA_CESC_DE.txt", 
+                                         "TCGA Cholangiocarcinoma (CHOL)" = "data/TCGA_CHOL_DE.txt", 
+                                         "TCGA Colon Adenocarcinoma (COAD)" = "data/TCGA_COAD_DE.txt", 
+                                         "TCGA Esophageal Carcinoma (ESCA)" = "data/TCGA_ESCA_DE.txt", 
+                                         "TCGA Glioblastoma Multiforme (GBM)" = "data/TCGA_GBM_DE.txt", 
+                                         "TCGA Head and Neck Squamous Cell Carcinoma (HNSC)" = "data/TCGA_HNSC_DE.txt", 
+                                         "TCGA Kidney Chromophobe (KICH)" = "data/TCGA_KICH_DE.txt", 
+                                         "TCGA Kidney Renal Clear Cell Carcinoma (KIRC)" = "data/TCGA_KIRC_DE.txt", 
+                                         "TCGA Kidney Renal Papillary Cell Carcinoma (KIRP)" = "data/TCGA_KIRP_DE.txt", 
+                                         "TCGA Liver Hepatocellular Carcinoma (LIHC)" = "data/TCGA_LIHC_DE.txt", 
+                                         "TCGA Lung Adenocarcinoma (LUAD)" = "data/TCGA_LUAD_DE.txt", 
+                                         "TCGA Lung Squamous Cell Carcinoma (LUSC)" = "data/TCGA_LUSC_DE.txt", 
+                                         "TCGA Pheochromocytoma and Paraganglioma (PCPG)" = "data/TCGA_PCPG_DE.txt", 
+                                         "TCGA Prostate Adenocarcinoma (PRAD)" = "data/TCGA_PRAD_DE.txt", 
+                                         "TCGA Rectum Adenocarcinoma (READ)" = "data/TCGA_READ_DE.txt", 
+                                         "TCGA Stomach Adenocarcinoma (STAD)" = "data/TCGA_STAD_DE.txt", 
+                                         "TCGA Thyroid Carcinoma (THCA)" = "data/TCGA_THCA_DE.txt", 
+                                         "TCGA Uterine Corpus Endometrial Carcinoma (UCEC)" = "data/TCGA_UCEC_DE.txt", 
+                                         "TCGA Glioblastoma signature (GBM.sig)" = "data/TCGA_GBM_Signature.txt", 
+                                         "TCGA Colon signature (CRC.sig)" = "data/TCGA_CRC_Signature.txt", 
+                                         "TCGA Breast signature (BRCA.sig)" = "data/TCGA_BRCA_Signature.txt", 
+                                         "PDX GBM Group 1 (PDX.GBM1)" = "data/Table_G1_1_PDX_Group1_L1000_only.txt", 
+                                         "PDX GBM Group 2 (PDX.GBM2)" = "data/Table_G2_1_PDX_Group2_L1000_only.txt", 
+                                         "PDX GBM Group 3 (PDX.GBM3)" = "data/Table_G3_1_PDX_Group3_L1000_only.txt", 
+                                         "PDX GBM Group 4 (PDX.GBM4)" = "data/Table_G4_1_PDX_Group4_L1000_only.txt")
+
+              T2_Temp1 <- read.csv(file=datasetInput_Dis, header = TRUE, sep = "")
               T2_values$Disease_Signature <- T2_Temp1
               T2_values$Disease_input <- input$T2_Disease
 })

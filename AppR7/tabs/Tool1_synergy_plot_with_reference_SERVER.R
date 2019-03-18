@@ -8,21 +8,40 @@ values <- reactiveValues()
 ### 2.1.1 Loading Disease Signatures  
 datasetInput_Dis <- reactive({
   switch(input$disease,
-         "Glioblastoma TCGA (GBM)" = "data/TCGA_GBM_Signature.txt",
-         "Colon TCGA (CRC)" = "data/TCGA_CRC_Signature.txt",
-         "Breast TCGA (BRCA)" = "data/TCGA_BRCA_Signature.txt",
-         "PDX GBM Group 1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
-         "PDX GBM Group 2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
-         "PDX GBM Group 3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
-         "PDX GBM Group 4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
+         "TCGA Bladder Urothelial Carcinoma (BLCA)" = "data/TCGA_BLCA_DE.txt", 
+         "TCGA Breast Invasive Carcinoma (BRCA)" = "data/TCGA_BRCA_DE.txt", 
+         "TCGA Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma (CESC)" = "data/TCGA_CESC_DE.txt", 
+         "TCGA Cholangiocarcinoma (CHOL)" = "data/TCGA_CHOL_DE.txt", 
+         "TCGA Colon Adenocarcinoma (COAD)" = "data/TCGA_COAD_DE.txt", 
+         "TCGA Esophageal Carcinoma (ESCA)" = "data/TCGA_ESCA_DE.txt", 
+         "TCGA Glioblastoma Multiforme (GBM)" = "data/TCGA_GBM_DE.txt", 
+         "TCGA Head and Neck Squamous Cell Carcinoma (HNSC)" = "data/TCGA_HNSC_DE.txt", 
+         "TCGA Kidney Chromophobe (KICH)" = "data/TCGA_KICH_DE.txt", 
+         "TCGA Kidney Renal Clear Cell Carcinoma (KIRC)" = "data/TCGA_KIRC_DE.txt", 
+         "TCGA Kidney Renal Papillary Cell Carcinoma (KIRP)" = "data/TCGA_KIRP_DE.txt", 
+         "TCGA Liver Hepatocellular Carcinoma (LIHC)" = "data/TCGA_LIHC_DE.txt", 
+         "TCGA Lung Adenocarcinoma (LUAD)" = "data/TCGA_LUAD_DE.txt", 
+         "TCGA Lung Squamous Cell Carcinoma (LUSC)" = "data/TCGA_LUSC_DE.txt", 
+         "TCGA Pheochromocytoma and Paraganglioma (PCPG)" = "data/TCGA_PCPG_DE.txt", 
+         "TCGA Prostate Adenocarcinoma (PRAD)" = "data/TCGA_PRAD_DE.txt", 
+         "TCGA Rectum Adenocarcinoma (READ)" = "data/TCGA_READ_DE.txt", 
+         "TCGA Stomach Adenocarcinoma (STAD)" = "data/TCGA_STAD_DE.txt", 
+         "TCGA Thyroid Carcinoma (THCA)" = "data/TCGA_THCA_DE.txt", 
+         "TCGA Uterine Corpus Endometrial Carcinoma (UCEC)" = "data/TCGA_UCEC_DE.txt", 
+         "TCGA Glioblastoma signature (GBM.sig)" = "data/TCGA_GBM_Signature.txt", 
+         "TCGA Colon signature (CRC.sig)" = "data/TCGA_CRC_Signature.txt", 
+         "TCGA Breast signature (BRCA.sig)" = "data/TCGA_BRCA_Signature.txt", 
+         "PDX GBM Group 1 (PDX.GBM1)" = "data/Table_G1_1_PDX_Group1_L1000_only.txt", 
+         "PDX GBM Group 2 (PDX.GBM2)" = "data/Table_G2_1_PDX_Group2_L1000_only.txt", 
+         "PDX GBM Group 3 (PDX.GBM3)" = "data/Table_G3_1_PDX_Group3_L1000_only.txt", 
+         "PDX GBM Group 4 (PDX.GBM4)" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
 })  
 
-TCGA_Sig <- reactive({ read.table(file=datasetInput_Dis(),header = TRUE,sep = "\t")})
-
-
+TCGA_Sig <- reactive({ read.csv(file=datasetInput_Dis(),sep = "")})
 
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.1 Loading Drug Signatures
+
 datasetInput_Dataset <- reactive({
   if (is.null(input$L1000_Dataset))
   {return()}
@@ -40,18 +59,14 @@ Drugs_SigsR <- reactive({
   Drugs_Sigs
 })
 
-
-
-
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.3 List of Drug Names
+
 Drugs <- reactive({ sort(row.names(Drugs_SigsR()))})
-
-
-
 
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.4 Selecting a Reference Drug
+
 output$ui <- renderUI({ selectInput("signature", "Select a Reference Drug",choices = Drugs(),selected = "GBM_JQ1")})
 
 JQ1_Sig <- reactive({
@@ -59,27 +74,57 @@ JQ1_Sig <- reactive({
   
 })
 
-
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.5 Reference Drug Threshold
+
 output$selected_var <- renderText({
   value2 <- as.numeric(100 - as.numeric(input$bins))
   paste("You have selected to use a ", value2,"% threshold for the gene consensus score. Genes with the lowest ",input$bins,"% scores will be filtered out",sep = "")
 })
 
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
-### 2.1.6 Calculating Similarity and Discordance Scores
+### 2.1.6 Selecting a Measure of Bioactivity
+
+datasetInput_Bioactivities <- reactive({
+  if (is.null(input$bioactivities))
+  {return()}
+  
+  switch(input$bioactivities,
+         "IC50" = "data/Bioactivities_IC50.txt",
+         "Kd" = "data/Bioactivities_Kd.txt",
+         "Ki" = "data/Bioactivities_Ki.txt",
+         "Potency" = "data/Bioactivities_Potency.txt"
+  )
+})
+
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
+### 2.1.6 Selecting a Measure of Bioactivity
+
+Drugs_TargsR <- reactive({
+  Drugs_Targs <- read.table(file=datasetInput_Bioactivities(), sep ="\t", header=TRUE)
+  Drugs_Targs.moa <- merge(Drugs_Targs, SM_MOA, by = "Drugs")
+  Drugs_Targs.moa
+})
+
+Targets <- reactive({ sort(as.character(Drugs_TargsR()[,'target_gene_symbol']))})
+
+output$ui_bioact <- renderUI({ selectInput("target", "Select a molecular target", choices = Targets())})
+
+targetChoice <- reactive({
+  as.character(input$target)
+})
+
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
+### 2.1.8 Calculating Similarity and Discordance Scores
+
 Final3 <- reactive({
   JQ1_Sig_v <- JQ1_Sig()
-  #JQ1_Sig_v <- t(Drugs_Sigs["JQ1",])
   JQ1_Sig_v<- data.frame(JQ1_Sig_v,Genes=row.names(JQ1_Sig_v))
   colnames(JQ1_Sig_v) <- c("JQ1","Genes")
   TCGA_Sig_v <- TCGA_Sig()
-  #TCGA_Sig_v <- read.table(file="data/TCGA_GBM_Signature.txt",header = TRUE,sep = "\t")
   V <- unique(as.numeric(as.character(JQ1_Sig_v$JQ1)))
   V2 <- max(abs(V))
   V4 <- as.numeric(input$bins)/100
-  #V4 <- as.numeric(30/100)
   V5 <- V2*V4
   V6 <- round(V5)
   JQ1_Sig_v$JQ1 <- as.numeric(as.character(JQ1_Sig_v$JQ1))
@@ -89,21 +134,26 @@ Final3 <- reactive({
   Drugs_Sigs2 <- Drugs_SigsR()[,jq1_genes]
   tt <-  apply(Drugs_Sigs2,1,function(x){x*JQ1_Sig_v2$JQ1})
   
-  #this is to calculate how similar are the drug signatures to jq1 (ratio of # of genes that have same direction with the JQ1 signature devided with # of genes that are disocrdant to JQ1)
-  tt2 <-  apply(tt,2,function(x) { a <- sum(x>0)
-  b <- sum(x<0)
-  b[b==0] <- 1 # replace b with 1 so we can devide by that number. Another way would be to add one to both a and b
-  c <- a/b
-  c
+  # Calculate how similar the drug signatures are to jq1 (ratio of # of genes that have same direction with the JQ1 signature divided by # of genes that are disocrdant to JQ1)
+  tt2 <-  apply(tt,2,function(x) { 
+    a <- sum(x>0)
+    b <- sum(x<0)
+    b[b==0] <- 1 # replace b with 1 so we can devide by that number. Another way would be to add one to both a and b
+    c <- a/b
+    # c
+    return(c(a,b,c))
   })
-  tt3 <- as.data.frame(tt2)
-  tmax <- max(tt3)
-  tt4 <- tt3/tmax
   
-  #this is to calculate the ratio of the genes that are discordant to the Disease Signature (and are not affected by JQ1) devided by the # of genes that are concordant to the Disease Signature (and non-JQ1)
+  tt3 <- as.data.frame(t(tt2))
+  
+  # tt3 <- as.data.frame(tt2)
+  # tmax <- max(tt3)
+  # tt4 <- tt3/tmax
+  ### ### ### ### ### ### ### ### ### ### ### ###
+  
+  # Calculate the ratio of the genes that are discordant to the Disease Signature (and are not affected by JQ1) divided by the # of genes that are concordant to the Disease Signature (and non-JQ1)
   jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$JQ1==0),2])
-  #01/23/2019 jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$JQ1 < V6 & JQ1_Sig_v$JQ1 > -V6),2])
-  
+
   genes <- colnames(Drugs_SigsR())
   TCGA_Sig_v$log2FoldChange <- as.numeric(TCGA_Sig_v$log2FoldChange)
   TCGA_Sig_v2 <- TCGA_Sig_v[,-1,drop=FALSE]
@@ -117,32 +167,57 @@ Final3 <- reactive({
   pp2 <-  apply(pp,2,function(x) { 
     aa <- sum(x>0)
     bb <- sum(x<0)
-    aa[aa==0] <- 1 # replace bb with 1 so we can devide by that number. Another way would be to add one to both aa and bb
+    aa[aa==0] <- 1 # replace aa with 1 so we can divide by that number. Another way would be to add one to both aa and bb
     cc <- bb/aa
     
     dd<- c(aa,bb,cc)
   })
+  
   pp3 <- as.data.frame(t(pp2))
-  pmax <- max(pp3[,3])
-  pp4 <- pp3/pmax
-  Final <- merge(pp4,tt4,by="row.names")
-  #text2 <- paste(input$signature,"_Orthogonality",sep="")
-  colnames(Final) <- c("Drug","Disease_Same","Disease_Opp","Disease_Discordance","Reference_Drug_Orthogonality")
+  
+  # pmax <- max(pp3[,3])
+  # pp4 <- pp3/pmax
+  # Final <- merge(pp4,tt4,by="row.names")
+  # colnames(Final) <- c("Drug","Disease_Same","Disease_Opp","Disease_Discordance","Reference_Drug_Orthogonality")
+  
+  Final <- merge(pp3[,3,drop=F],tt3[,3,drop=F],by="row.names")
+  colnames(Final) <- c("Drug","Disease_Discordance", "Reference_Drug_Orthogonality")
   Final
-  #values$Final2 <- data.frame(Final)
+  
   Final[,2] <- round(Final[,2],digits=3)
   Final[,3] <- round(Final[,3],digits=3)
+  
+  bioact.moa <- Drugs_TargsR()
+  
+  # values$Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
+  
+  f3 <- merge(Final, bioact.moa, by.x = "Drug", by.y = "Drugs", all.x = TRUE)
+  
+  f3.ord <-f3[with(f3, order(-Disease_Discordance, Reference_Drug_Orthogonality)), ]
+  
+  target <- targetChoice()
+  drugs.sameTargets1 <- na.omit(as.data.frame(f3.ord[f3.ord$target_gene_symbol==paste0(target),]))
+  colnames(drugs.sameTargets1)[1] <- c("Drug")
+  
+  if (nrow(drugs.sameTargets1)>2){
+    pal <- brewer.pal(nrow(drugs.sameTargets1),"BrBG")
+  } else{
+    pal <- brewer.pal(3,"BrBG")
+  }
   
   values$Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
   
 })
 
-
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
-### 2.1.7 Synergy Plot
+### 2.1.9 Synergy Plot
 output$plot1 <- renderPlotly({
-  plot_ly(Final3(), x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance,type = 'scatter',alpha=0.7,marker = list(size = 14),
-          mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+  p1 <- plot_ly(Final, x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, type = 'scatter', alpha=0.7, marker = list(size = 14),
+                mode = 'markers', hoverinfo = 'text', text = ~paste(Drug,'<br>', "Ratio:", Disease_Discordance, Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
+  
+  p1 %>%
+    add_data(drugs.sameTargets1) %>%
+    add_markers(x = ~Reference_Drug_Orthogonality, y = ~Disease_Discordance, color = ~Median, colors = pal) %>% colorbar(title = paste0("Median ", input$bioactivities))
 })
 
 output$table1 <- renderTable({
@@ -161,7 +236,6 @@ output$view1 <- DT::renderDataTable({
   #values$Final2$Reference_Drug_Orthogonality <- round(as.numeric(values$Final2$Reference_Drug_Orthogonality),digits=2 )
   values$Final2[,c(1,2,3,6,7)]
 })
-
 
 
 output$selected_var2 <- renderText({
@@ -199,8 +273,6 @@ output$downloadData <- downloadHandler(
   },
   contentType="text/plain"
 )
-
-
 
 
 output$downloadData_Drug_Sig <- downloadHandler(
