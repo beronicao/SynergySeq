@@ -6,18 +6,31 @@ values <- reactiveValues()
 
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.1 Loading Disease Signatures  
-datasetInput_Dis <- reactive({
-  switch(input$disease,
-         "Glioblastoma TCGA (GBM)" = "data/TCGA_GBM_Signature.txt",
-         "Colon TCGA (CRC)" = "data/TCGA_CRC_Signature.txt",
-         "Breast TCGA (BRCA)" = "data/TCGA_BRCA_Signature.txt",
-         "PDX GBM Group 1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
-         "PDX GBM Group 2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
-         "PDX GBM Group 3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
-         "PDX GBM Group 4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt") 
-})  
+observeEvent(eventExpr=input$T1_Disease,ignoreInit = FALSE, {
+  datasetInput_Dis <- switch(input$T1_Disease,
+                             "Glioblastoma TCGA (GBM)" = "data/TCGA_GBM_Signature.txt",
+                             "Colon TCGA (CRC)" = "data/TCGA_CRC_Signature.txt",
+                             "Breast TCGA (BRCA)" = "data/TCGA_BRCA_Signature.txt",
+                             "PDX GBM Group 1" = "data/Table_G1_1_PDX_Group1_L1000_only.txt",
+                             "PDX GBM Group 2" = "data/Table_G2_1_PDX_Group2_L1000_only.txt",
+                             "PDX GBM Group 3" = "data/Table_G3_1_PDX_Group3_L1000_only.txt" ,
+                             "PDX GBM Group 4" = "data/Table_G4_1_PDX_Group4_L1000_only.txt")
+  T2_Temp1 <- read.table(file=datasetInput_Dis,header = TRUE,sep = "\t")
+  values$Disease_Signature <- T2_Temp1
+  values$Disease_input <- input$T2_Disease
+})
 
-TCGA_Sig <- reactive({ read.table(file=datasetInput_Dis(),header = TRUE,sep = "\t")})
+
+observeEvent(eventExpr=input$T1_go_disease_signature,ignoreInit = TRUE, {
+  T1_Temp2 <- read.table(text=input$T1_Disease_Text_Box,sep=",")
+  colnames(T1_Temp2) <- c("Genes","log2FoldChange")
+  T1_Temp2$Genes <- trimws(T1_Temp2$Genes,which="both")
+  T1_Temp2$log2FoldChange <- trimws(T1_Temp2$log2FoldChange,which="both")
+  values$Disease_Signature <- T1_Temp2
+  values$Disease_input <- "Custom Disease Signature"
+})
+
+
 
 
 
@@ -42,11 +55,9 @@ Drugs_SigsR <- reactive({
 
 
 
-
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.3 List of Drug Names
 Drugs <- reactive({ sort(row.names(Drugs_SigsR()))})
-
 
 
 
@@ -54,9 +65,26 @@ Drugs <- reactive({ sort(row.names(Drugs_SigsR()))})
 ### 2.1.4 Selecting a Reference Drug
 output$ui <- renderUI({ selectInput("signature", "Select a Reference Drug",choices = Drugs(),selected = "GBM_JQ1")})
 
-JQ1_Sig <- reactive({
-  T <-t(Drugs_SigsR()[as.character(input$signature),])
-  
+observeEvent(eventExpr=input$signature,ignoreInit = FALSE, {
+  T1_temp <- t(data.frame(Drugs_SigsR()[as.character(input$signature),]))
+  values$Ref_Drug_Signature <- data.frame(Genes = row.names(T1_temp),T1_temp)
+  colnames(values$Ref_Drug_Signature) <- c("Genes","Values")
+  values$Reference_input <- "Precalculated Reference Signature"
+})
+
+
+observeEvent(eventExpr=input$T1_go_reference_signature,ignoreInit = TRUE, {
+  T1_Temp3 <- read.table(text=input$T1_Reference_Text_Box,sep=",")
+  colnames(T1_Temp3) <- c("Genes","Values")
+  T1_Temp3$Genes <- trimws(T1_Temp3$Genes,which="both")
+  T1_Temp3$Values <- trimws(T1_Temp3$Values,which="both")
+  T1_Temp4 <- data.frame(Genes=colnames(Drugs_SigsR()))
+  T1_Temp5 <- merge(T1_Temp4,T1_Temp3,by="Genes",all.x=TRUE)
+  T1_Temp5[is.na(T1_Temp5)] <- 0
+  row.names(T1_Temp5) <- as.character(T1_Temp5$Genes)
+  colnames(T1_Temp5) <- c("Genes","Values")
+  values$Ref_Drug_Signature <- T1_Temp5
+  values$Reference_input <- "Custom Reference Signature"
 })
 
 
@@ -69,25 +97,22 @@ output$selected_var <- renderText({
 
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### 
 ### 2.1.6 Calculating Similarity and Discordance Scores
+
 Final3 <- reactive({
-  JQ1_Sig_v <- JQ1_Sig()
-  #JQ1_Sig_v <- t(Drugs_Sigs["JQ1",])
-  JQ1_Sig_v<- data.frame(JQ1_Sig_v,Genes=row.names(JQ1_Sig_v))
-  colnames(JQ1_Sig_v) <- c("JQ1","Genes")
-  TCGA_Sig_v <- TCGA_Sig()
-  #TCGA_Sig_v <- read.table(file="data/TCGA_GBM_Signature.txt",header = TRUE,sep = "\t")
-  V <- unique(as.numeric(as.character(JQ1_Sig_v$JQ1)))
+  JQ1_Sig_v <-values$Ref_Drug_Signature
+  TCGA_Sig_v <-  values$Disease_Signature 
+  V <- unique(as.numeric(as.character(JQ1_Sig_v$Values)))
   V2 <- max(abs(V))
   V4 <- as.numeric(input$bins)/100
   #V4 <- as.numeric(30/100)
   V5 <- V2*V4
   V6 <- round(V5)
-  JQ1_Sig_v$JQ1 <- as.numeric(as.character(JQ1_Sig_v$JQ1))
-  JQ1_Sig_v2 <- JQ1_Sig_v[which(JQ1_Sig_v$JQ1 > V6 | JQ1_Sig_v$JQ1 < -V6),]
-  JQ1_Sig_v2 <- JQ1_Sig_v2[which(JQ1_Sig_v2$JQ1 > 0 | JQ1_Sig_v2$JQ1 < 0),]
+  JQ1_Sig_v$Values <- as.numeric(as.character(JQ1_Sig_v$Values))
+  JQ1_Sig_v2 <- JQ1_Sig_v[which(JQ1_Sig_v$Values > V6 | JQ1_Sig_v$Values < -V6),]
+  JQ1_Sig_v2 <- JQ1_Sig_v2[which(JQ1_Sig_v2$Values > 0 | JQ1_Sig_v2$Values < 0),]
   jq1_genes <- as.character(JQ1_Sig_v2$Genes)
   Drugs_Sigs2 <- Drugs_SigsR()[,jq1_genes]
-  tt <-  apply(Drugs_Sigs2,1,function(x){x*JQ1_Sig_v2$JQ1})
+  tt <-  apply(Drugs_Sigs2,1,function(x){x*JQ1_Sig_v2$Values})
   
   #this is to calculate how similar are the drug signatures to jq1 (ratio of # of genes that have same direction with the JQ1 signature devided with # of genes that are disocrdant to JQ1)
   tt2 <-  apply(tt,2,function(x) { a <- sum(x>0)
@@ -101,7 +126,7 @@ Final3 <- reactive({
   tt4 <- tt3/tmax
   
   #this is to calculate the ratio of the genes that are discordant to the Disease Signature (and are not affected by JQ1) devided by the # of genes that are concordant to the Disease Signature (and non-JQ1)
-  jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$JQ1==0),2])
+  jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$Values==0),"Genes"])
   #01/23/2019 jq1_genes2 <- as.character(JQ1_Sig_v[which(JQ1_Sig_v$JQ1 < V6 & JQ1_Sig_v$JQ1 > -V6),2])
   
   genes <- colnames(Drugs_SigsR())
@@ -132,6 +157,7 @@ Final3 <- reactive({
   #values$Final2 <- data.frame(Final)
   Final[,2] <- round(Final[,2],digits=3)
   Final[,3] <- round(Final[,3],digits=3)
+  F3 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
   
   values$Final2 <- merge(Final,SM_MOA,by.x="Drug",by.y="Drugs",all.x = TRUE)
   
@@ -145,45 +171,40 @@ output$plot1 <- renderPlotly({
           mode = 'markers',hoverinfo= 'text',text=~paste(Drug,'<br>',"Ratio:",Disease_Discordance,Reference_Drug_Orthogonality)) %>% layout(dragmode = "select")
 })
 
-output$table1 <- renderTable({
-  
+# output$table1 <- renderTable({
+#   s <- event_data("plotly_selected")
+#   values$Final2$Reference_Drug_Orthogonality <- as.character(values$Final2$Reference_Drug_Orthogonality)
+#   values$Final2$Disease_Discordance <- as.character(values$Final2$Disease_Discordance)
+#   values$Final2[which(values$Final2$Reference_Drug_Orthogonality %in% s$x & values$Final2$Disease_Discordance %in% s$y)  ,]
+# })
+
+
+
+output$view1 <- DT::renderDataTable(DT::datatable({
   s <- event_data("plotly_selected")
   values$Final2$Reference_Drug_Orthogonality <- as.character(values$Final2$Reference_Drug_Orthogonality)
-  values$Final2$Disease_Discordance <- as.character(values$Final2$Disease_Discordance)
-  values$Final2[which(values$Final2$Reference_Drug_Orthogonality %in% s$x & values$Final2$Disease_Discordance %in% s$y)  ,]
-})
-
-output$view1 <- DT::renderDataTable({ 
-  s <- event_data("plotly_selected")
-  values$Final2$Reference_Drug_Orthogonality <- as.character(values$Final2$Reference_Drug_Orthogonality)
-  values$Final2$Disease_Discordance <- as.character(values$Final2$Disease_Discordance)
-  values$Final2[which(values$Final2$Reference_Drug_Orthogonality %in% s$x & values$Final2$Disease_Discordance %in% s$y)  ,]
-  #values$Final2$Reference_Drug_Orthogonality <- round(as.numeric(values$Final2$Reference_Drug_Orthogonality),digits=2 )
-  values$Final2[,c(1,2,3,6,7)]
-})
-
-
+   values$Final2$Disease_Discordance <- as.character(values$Final2$Disease_Discordance)
+  Temp1 <- values$Final2[which(values$Final2$Reference_Drug_Orthogonality %in% s$x & values$Final2$Disease_Discordance %in% s$y)  ,]
+  Temp1[,c(1,7,2,3,6)]
+}, escape = FALSE))
 
 output$selected_var2 <- renderText({
   cols <- as.character(colnames(Drugs_SigsR()))
-  TCGA_Sig2 <- TCGA_Sig()
+  TCGA_Sig2 <-  values$Disease_Signature 
   length2 <- intersect(cols,as.character(TCGA_Sig2$Genes))
   paste("The Disease Signature has ",length(length2)," genes that are measured by the L1000 Platform")
 })
 
-
 output$selected_var3 <- renderText({
-  JQ1_Sig3 <- JQ1_Sig()
-  JQ1_Sig3<-  data.frame(JQ1_Sig3,Genes=row.names(JQ1_Sig3))
-  colnames(JQ1_Sig3) <- c("JQ1","Genes")
-  T <- unique(as.numeric(as.character(JQ1_Sig3$JQ1)))
+  JQ1_Sig3 <-  values$Ref_Drug_Signature
+   T <- unique(as.numeric(as.character(JQ1_Sig3$Values)))
   T2 <- max(abs(T))
   T4 <- as.numeric(input$bins)/100
-  T5 <- T2*T4
+   T5 <- T2*T4
   T6 <- round(T5)
-  JQ1_Sig3$JQ1 <- as.numeric(as.character(JQ1_Sig3$JQ1))
-  JQ1_Sig3_2 <- JQ1_Sig3[which(JQ1_Sig3$JQ1 > T6 | JQ1_Sig3$JQ1 < -T6),]
-  JQ1_Sig3_2 <- JQ1_Sig3_2[which(JQ1_Sig3_2$JQ1 > 0 | JQ1_Sig3_2$JQ1 < 0),]
+  JQ1_Sig3$Values <- as.numeric(as.character(JQ1_Sig3$Values))
+  JQ1_Sig3_2 <- JQ1_Sig3[which(JQ1_Sig3$Values > T6 | JQ1_Sig3$Values < -T6),]
+  JQ1_Sig3_2 <- JQ1_Sig3_2[which(JQ1_Sig3_2$Values > 0 | JQ1_Sig3_2$Values < 0),]
   paste("The",input$signature," signature has",length(JQ1_Sig3_2$Genes),"genes that are measured by the L1000 Platform")
 })
 
@@ -201,8 +222,6 @@ output$downloadData <- downloadHandler(
 )
 
 
-
-
 output$downloadData_Drug_Sig <- downloadHandler(
   filename = function() {
     paste("Drug_Signature_Table", ".txt", sep = "")
@@ -215,13 +234,3 @@ output$downloadData_Drug_Sig <- downloadHandler(
 ) 
 
 
-output$downloadExample <- downloadHandler(
-  filename = function() {
-    paste("Drug_Signature_Example", ".txt", sep = "")
-  },
-  content = function(file) {
-    write.table(TCGA_Sig() , file, row.names = FALSE,sep="\t")
-    
-  },
-  contentType="text/plain"
-) 

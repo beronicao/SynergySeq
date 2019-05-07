@@ -5,12 +5,18 @@ tabPanel("Synergy Plot",
            tags$div(
              p("1. Disease Signature", style = "text-align: center;margin:0px;color: #34495e;font-weight: bold;font-size: 20px;"),
              hr(style="border-top-style: solid;border-top-width:2px;margin:12px;"),
-             selectInput(inputId = "disease",
+             selectInput(inputId = "T1_Disease",
                          label = "Select a Disease Signature:",
                          choices = c("Glioblastoma TCGA (GBM)","Colon TCGA (CRC)", "Breast TCGA (BRCA)",
                                      "PDX GBM Group 1", "PDX GBM Group 2", "PDX GBM Group 3", "PDX GBM Group 4")),
              helpText("OR",style="text-align: center;margin-top:0px;margin-bottom: 6px;"),
-             textAreaInput("Ref_Sig_Text_Box", "Paste a Disease Signature", placeholder="Gene, Expression Value"),
+             fluidRow(
+               column(8,  h5("Paste a Disease Signature",style="font-weight: bold") )), 
+             fluidRow(
+               
+               column(8, textAreaInput("T1_Disease_Text_Box",label=NULL, placeholder="Gene, Expression Value")),
+               column(2, actionButton("T1_go_disease_signature", "Go"))),
+             column(1),
              style="border-width: 2px;padding:15px;border-radius: 5px; border-color: #34495e;background-color: white;border-style: solid;"),
            
            br(),
@@ -21,8 +27,15 @@ tabPanel("Synergy Plot",
              hr(style="border-top-style: solid;border-top-width:2px;margin:12px;"),
              uiOutput("ui",style="margin-bottom: 0px;"),
              helpText("OR",style="text-align: center;margin-top:0px;margin-bottom: 6px;"),
-             textAreaInput("Ref_Sig_Text_Box", "Paste a Reference Signature", placeholder="Gene, Expression Value"),
+             fluidRow(
+               column(8,  h5("Paste a Reference Signature",style="font-weight: bold") )), 
+             fluidRow(
+               
+               column(8, textAreaInput("T1_Reference_Text_Box",label=NULL, placeholder="Gene, Expression Value")),
+               column(2, actionButton("T1_go_reference_signature", "Go"))),
+             column(1),
              style="border-width: 2px;padding:15px;border-radius: 5px; border-color: #34495e;background-color: white;border-style: solid;"),
+           
            
            br(),
            br(),
